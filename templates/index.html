@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Drive - File Server</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=9">
+</head>
+<body>
+
+    <!-- Main Container Layout -->
+    <div class="app-container" id="appLayout">
+        
+        <aside class="sidebar" id="sidebar">
+            <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" onclick="handleSidebarToggle()" title="Toggle Sidebar">
+                <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </button>
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg>
+                </div>
+                <div class="logo-text">Quantum Drive</div>
+            </div>
+
+            <div class="new-btn-container">
+                <button class="btn-new" onclick="toggleDropdown()">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h-2v6h6v2z"/></svg>
+                    <span>New</span>
+                </button>
+                <div class="dropdown-menu" id="dropdownMenu">
+                    <div class="dropdown-item" onclick="showCreateFolderDialog()">
+                        <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/></svg>
+                        New Folder
+                    </div>
+                    <div class="dropdown-item" onclick="showCreateFileDialog()">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                        New Text File
+                    </div>
+                    <div class="dropdown-item" onclick="triggerFileUpload()">
+                        <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+                        Upload Files
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a class="nav-link active" id="driveNavLink" onclick="navigateTo('')">
+                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    <span>My Drive</span>
+                </a>
+                <a class="nav-link trash-link" id="trashNavLink" onclick="navigateToTrash()">
+                    <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    <span>Trash Bin</span>
+                </a>
+                <a class="nav-link logout-link" onclick="logout()" title="Logout" style="margin-top: auto;">
+                    <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+                    <span>Logout</span>
+                </a>
+            </nav>
+
+            <!-- Storage Pool statistics widget -->
+            <div class="sidebar-storage-widget" id="sidebarStorageWidget">
+                <div class="storage-widget-header">
+                    <span>Storage Pool</span>
+                    <span id="storagePercent">0%</span>
+                </div>
+                <div class="storage-bar-bg">
+                    <div class="storage-bar-fill" id="storageBarFill" style="width: 0%;"></div>
+                </div>
+                <div class="storage-widget-text" id="storageText">Calculating usage...</div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT PANEL -->
+        <main class="main-workspace">
+            <header class="top-header">
+                
+                <div class="search-container">
+                    <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" class="search-input" id="searchInput" placeholder="Search files & folders...">
+                </div>
+
+                <div class="header-actions">
+                    <!-- Empty Trash Button (Visible in Trash mode) -->
+                    <button class="btn-action btn-action-danger" id="emptyTrashBtn" onclick="showEmptyTrashDialog()" style="display: none; width: auto; padding: 8px 16px; font-size: 13px; align-items: center; gap: 6px; border-radius: 8px; margin-right: 12px;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="display:inline-block;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                        Empty Trash
+                    </button>
+                    <!-- Sort Dropdown -->
+                    <div class="sort-container" style="position: relative;">
+                        <button class="icon-btn" id="sortBtn" onclick="toggleSortDropdown()" title="Sort Options">
+                            <svg viewBox="0 0 24 24"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
+                        </button>
+                        <div class="dropdown-menu" id="sortDropdown">
+                            <div class="dropdown-item" onclick="changeSort('name')">Sort by Name<span id="sortNameCheck" style="margin-left:auto;color:var(--accent);font-weight:bold;"> ✓</span></div>
+                            <div class="dropdown-item" onclick="changeSort('modified')">Sort by Date<span id="sortDateCheck" style="margin-left:auto;color:var(--accent);font-weight:bold;"></span></div>
+                            <div class="dropdown-item" onclick="changeSort('size')">Sort by Size<span id="sortSizeCheck" style="margin-left:auto;color:var(--accent);font-weight:bold;"></span></div>
+                            <hr style="border: 0; border-top: 1px solid var(--border); margin: 6px 0;">
+                            <div class="dropdown-item" onclick="toggleSortOrder()"><span id="sortOrderText">Ascending ⬆️</span></div>
+                        </div>
+                    </div>
+                    <button class="icon-btn active" id="gridViewBtn" onclick="setView('grid')" title="Grid View">
+                        <svg viewBox="0 0 24 24"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
+                    </button>
+                    <button class="icon-btn" id="listViewBtn" onclick="setView('list')" title="List View">
+                        <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+                    </button>
+                    <button class="icon-btn active" id="detailsToggleBtn" onclick="toggleDetailsPane()" title="Details Panel">
+                        <svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2V7h-2v2z"/></svg>
+                    </button>
+                    
+
+                </div>
+            </header>
+
+            <!-- File Explorer Workspace -->
+            <div class="browser-content" id="browserContent">
+                
+                <!-- Drag and Drop Overlay -->
+                <div class="drag-overlay">
+                    <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                    <p>Drop your files here to upload instantly</p>
+                </div>
+
+                <!-- Global Search Category Filter Pills -->
+                <div class="search-filters-container" id="searchFilters" style="display: none;">
+                    <span class="filter-pill active" id="filterAll" onclick="setSearchCategory('', this)">All Types</span>
+                    <span class="filter-pill" onclick="setSearchCategory('image', this)">Images</span>
+                    <span class="filter-pill" onclick="setSearchCategory('document', this)">Documents</span>
+                    <span class="filter-pill" onclick="setSearchCategory('video', this)">Videos</span>
+                    <span class="filter-pill" onclick="setSearchCategory('audio', this)">Audio</span>
+                    <span class="filter-pill" onclick="setSearchCategory('code', this)">Code</span>
+                </div>
+
+                <!-- Breadcrumbs -->
+                <div class="breadcrumb-bar" id="breadcrumb">
+                    <span class="breadcrumb-segment active" onclick="navigateTo('')">My Drive</span>
+                </div>
+
+                <!-- Folder Grid Header -->
+                <div id="foldersTitle" class="section-header hidden">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+                    Folders
+                </div>
+                <!-- Folder Cards Grid -->
+                <div id="folderGrid" class="folder-grid"></div>
+
+                <!-- File Grid Header -->
+                <div id="filesTitle" class="section-header hidden">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                    Files
+                </div>
+                <!-- Grid View for Files -->
+                <div id="fileGrid" class="file-grid"></div>
+
+                <!-- List View Container (Used when list mode is toggled) -->
+                <div id="fileListContainer" class="file-list-view hidden">
+                    <div class="list-header">
+                        <div></div>
+                        <div onclick="changeSort('name')" style="cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">Name <span id="listSortNameDir" style="color:var(--accent); font-size: 11px;"></span></div>
+                        <div onclick="changeSort('modified')" style="cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">Modified <span id="listSortDateDir" style="color:var(--accent); font-size: 11px;"></span></div>
+                        <div onclick="changeSort('size')" style="cursor: pointer; display: flex; align-items: center; gap: 4px; user-select: none;">Size <span id="listSortSizeDir" style="color:var(--accent); font-size: 11px;"></span></div>
+                    </div>
+                    <div id="fileListRows"></div>
+                </div>
+
+                <!-- Loading State Spinner -->
+                <div id="loading" class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Fetching content...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="empty-state hidden">
+                    <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg>
+                    <p>No files or folders found here.</p>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- DETAILS SIDE PANE -->
+        <aside class="details-pane" id="detailsPane">
+            <div class="details-header">
+                <div class="details-title">Properties</div>
+                <button class="details-close" onclick="closeDetailsPane()">&times;</button>
+            </div>
+            
+            <div class="details-content" id="detailsContent">
+                <!-- Injected dynamically on click -->
+                <div class="details-empty">
+                    <svg viewBox="0 0 24 24"><path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg>
+                    <p>Select an item's top-left info icon to view detailed specifications and actions.</p>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Modals Layer -->
+    <!-- Create Folder Modal -->
+    <div class="modal-overlay" id="createFolderModal">
+        <div class="modal-dialog">
+            <div class="modal-header-dialog">
+                <div class="modal-title-dialog">New Folder</div>
+                <button class="details-close" onclick="closeModal('createFolderModal')">&times;</button>
+            </div>
+            <div class="modal-body-dialog">
+                <input type="text" class="modal-input" id="folderNameInput" placeholder="Untitled Folder" autofocus>
+            </div>
+            <div class="modal-footer-dialog">
+                <button class="btn-action btn-action-secondary" onclick="closeModal('createFolderModal')">Cancel</button>
+                <button class="btn-action btn-action-primary" onclick="submitCreateFolder()" style="width: auto; padding: 12px 24px;">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Text File Modal -->
+    <div class="modal-overlay" id="createFileModal">
+        <div class="modal-dialog">
+            <div class="modal-header-dialog">
+                <div class="modal-title-dialog">New Text File</div>
+                <button class="details-close" onclick="closeModal('createFileModal')">&times;</button>
+            </div>
+            <div class="modal-body-dialog">
+                <input type="text" class="modal-input" id="fileNameInput" placeholder="notes.txt" autofocus>
+            </div>
+            <div class="modal-footer-dialog">
+                <button class="btn-action btn-action-secondary" onclick="closeModal('createFileModal')">Cancel</button>
+                <button class="btn-action btn-action-primary" onclick="submitCreateFile()" style="width: auto; padding: 12px 24px;">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Item Modal -->
+    <div class="modal-overlay" id="renameModal">
+        <div class="modal-dialog">
+            <div class="modal-header-dialog">
+                <div class="modal-title-dialog">Rename Item</div>
+                <button class="details-close" onclick="closeModal('renameModal')">&times;</button>
+            </div>
+            <div class="modal-body-dialog">
+                <input type="text" class="modal-input" id="renameInput" autofocus>
+            </div>
+            <div class="modal-footer-dialog">
+                <button class="btn-action btn-action-secondary" onclick="closeModal('renameModal')">Cancel</button>
+                <button class="btn-action btn-action-primary" onclick="submitRename()" style="width: auto; padding: 12px 24px;">Rename</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div class="modal-overlay" id="deleteConfirmModal">
+        <div class="modal-dialog">
+            <div class="modal-header-dialog">
+                <div class="modal-title-dialog">Delete Item</div>
+                <button class="details-close" onclick="closeModal('deleteConfirmModal')">&times;</button>
+            </div>
+            <div class="modal-body-dialog">
+                <p style="font-size: 14.5px; line-height: 1.5; color: var(--text-muted);">
+                    Are you sure you want to permanently delete <strong id="deleteTargetName" style="color: var(--text-main);">this item</strong>? This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer-dialog">
+                <button class="btn-action btn-action-secondary" onclick="closeModal('deleteConfirmModal')">Cancel</button>
+                <button class="btn-action btn-action-danger" onclick="submitDelete()" style="width: auto; padding: 12px 24px;">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty Trash Confirm Modal -->
+    <div class="modal-overlay" id="emptyTrashConfirmModal">
+        <div class="modal-dialog">
+            <div class="modal-header-dialog">
+                <div class="modal-title-dialog">Empty Trash Bin</div>
+                <button class="details-close" onclick="closeModal('emptyTrashConfirmModal')">&times;</button>
+            </div>
+            <div class="modal-body-dialog">
+                <p style="font-size: 14.5px; line-height: 1.5; color: var(--text-muted);">
+                    Are you sure you want to permanently delete <strong style="color: var(--text-main);">all items</strong> in the Trash bin? This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer-dialog">
+                <button class="btn-action btn-action-secondary" onclick="closeModal('emptyTrashConfirmModal')">Cancel</button>
+                <button class="btn-action btn-action-danger" onclick="submitEmptyTrash()" style="width: auto; padding: 12px 24px;">Empty Trash</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FULL SCREEN PREVIEW MODAL -->
+    <div class="preview-modal" id="previewModal">
+        <div class="preview-modal-header">
+            <div class="preview-modal-title" id="previewModalTitle">Preview</div>
+            <div class="preview-modal-actions">
+                <button class="icon-btn" id="previewDownloadBtn" title="Download">
+                    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                </button>
+                <button class="icon-btn" onclick="closePreviewModal()" title="Close">
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="preview-modal-body" id="previewModalBody">
+            <!-- Content injected dynamically -->
+        </div>
+    </div>
+
+    <!-- HTML File Input -->
+    <input type="file" id="fileInput" style="display: none;" multiple>
+
+    <!-- Toasts notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Custom Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item" id="ctxOpen">
+            <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+            <span>Open</span>
+        </div>
+        <div class="context-menu-item" id="ctxRestore" style="display: none; color: var(--accent);">
+            <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+            <span>Restore</span>
+        </div>
+        <div class="context-menu-item" id="ctxDownload">
+            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            <span>Download</span>
+        </div>
+        <div class="context-menu-item" id="ctxRename">
+            <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            <span>Rename</span>
+        </div>
+        <div class="context-menu-item" id="ctxDelete" style="color: var(--danger);">
+            <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            <span>Delete</span>
+        </div>
+    </div>
+
+    <!-- Upload Progress Panel -->
+    <div class="upload-progress-panel collapsed" id="uploadProgressPanel" style="display: none;">
+        <div class="progress-panel-header" onclick="toggleProgressPanelCollapse()">
+            <div class="progress-panel-title">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="color:var(--accent);"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                <span>Uploads</span>
+            </div>
+            <button class="progress-panel-toggle" id="progressPanelToggleBtn">▲</button>
+        </div>
+        <div class="progress-items-list" id="progressItemsList"></div>
+    </div>
+
+    <!-- Floating Batch Action Bar -->
+    <div class="batch-action-bar" id="batchActionBar">
+        <span class="batch-selected-count" id="batchSelectedCount">0 items selected</span>
+        <div class="batch-actions-wrapper">
+            <button class="btn-action btn-action-primary" onclick="submitBatchDownload()" style="width: auto; padding: 8px 16px; font-size: 13px; display: flex; align-items: center; gap: 6px; border-radius: 8px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="display:inline-block;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                <span id="batchDlBtnText">Download ZIP</span>
+            </button>
+            <button class="btn-action btn-action-danger" onclick="submitBatchDelete()" style="width: auto; padding: 8px 16px; font-size: 13px; display: flex; align-items: center; gap: 6px; border-radius: 8px;">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="display:inline-block;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                <span id="batchDelBtnText">Delete Selected</span>
+            </button>
+            <button class="btn-action btn-action-secondary" onclick="clearBatchSelection()" style="width: auto; padding: 8px 16px; font-size: 13px; border-radius: 8px;">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- App JS -->
+    <script src="/static/js/app.js?v=9"></script>
+</body>
+</html>

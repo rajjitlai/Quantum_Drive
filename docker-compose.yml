@@ -1,0 +1,49 @@
+services:
+  file-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: file-server-app
+    
+    # Auto-restart policy
+    restart: always
+    
+    # Port mapping (unique port 8765)
+    ports:
+      - "8765:8765"
+    
+    # Volume for persistent file storage
+    volumes:
+      - /mnt/HDD:/mnt/HDD
+      - .:/app
+    
+    # Environment variables
+    environment:
+      FLASK_APP: app.py
+      FLASK_ENV: production
+      PYTHONUNBUFFERED: 1
+    
+    # Resource limits (optional)
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Network configuration
+    networks:
+      - file-server-network
+
+networks:
+  file-server-network:
+    driver: bridge
