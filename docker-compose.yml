@@ -22,6 +22,9 @@ services:
       FLASK_APP: app.py
       FLASK_ENV: production
       PYTHONUNBUFFERED: 1
+      ACCESS_PASSWORD: ${ACCESS_PASSWORD:-newhope4NewLife}
+      SECRET_KEY: ${SECRET_KEY}
+      SHARED_FOLDER: ${SHARED_FOLDER:-/mnt/HDD/}
     
     # Resource limits (optional)
     deploy:

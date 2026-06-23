@@ -61,7 +61,7 @@ After starting with Docker:
 
 - **Local access**: http://localhost:8765
 - **Network access**: http://YOUR_IP:8765 (e.g., http://192.168.1.100:8765)
-- **Default password**: admin123 (change in app.py)
+- **Default password**: newhope4NewLife (change immediately in `.env` or system environment!)
 
 ## Management Commands
 
@@ -106,36 +106,35 @@ The Docker setup includes:
 
 ## Environment Variables
 
-Available environment variables (defined in `.env.docker`):
+Available environment variables (defined in `.env.docker` and `.env.example`):
 
 ```
 FLASK_ENV=production
 FLASK_APP=app.py
 PYTHONUNBUFFERED=1
 PORT=8765 (optional, defaults to 8765)
+SHARED_FOLDER=/mnt/HDD/
+ACCESS_PASSWORD=your-secure-password
+SECRET_KEY=your-session-encryption-key
 ```
 
 ## Production Considerations
 
 For production deployment:
 
-1. **Change Secret Key** - Edit `app.py` line 21:
-
-   ```python
-   app.secret_key = "your-very-secure-random-key-here"
-   ```
-
-2. **Change Default Password** - Edit `app.py` line 24:
-
-   ```python
-   PASSWORD_HASH = generate_password_hash("your-secure-password")
-   ```
-
-3. **Use Environment Variables** - Store sensitive data in `.env` file:
-
+1. **Configure Environment:** Create a `.env` file by cloning `.env.example`:
    ```bash
-   cp .env.docker .env
-   # Edit .env with your production values
+   cp .env.example .env
+   ```
+
+2. **Change Default Password:** Edit `.env` to specify a secure password for `ACCESS_PASSWORD`:
+   ```ini
+   ACCESS_PASSWORD=your-extremely-secure-password
+   ```
+
+3. **Configure Secret Key:** Edit `.env` to specify a random string for `SECRET_KEY` (or leave it blank to generate a random key dynamically on each server boot):
+   ```ini
+   SECRET_KEY=some-cryptographically-secure-random-string
    ```
 
 4. **Deploy on Server** - Use Docker on a production server or cloud platform (AWS, Azure, DigitalOcean, etc.)

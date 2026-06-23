@@ -1,133 +1,91 @@
-# File Server with Custom UI
+# Quantum Drive - Secure File Server
 
-A Python-based file server with a Google Drive-inspired interface, password protection, and file management features.
+A Python-based file server with a clean, Google Drive-inspired dark interface, password protection, and rich file management features.
 
-## Features
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-rajjitlai%2FQuantum__Drive-green.svg)](https://github.com/rajjitlai/Quantum_Drive)
 
-- 🔐 Password-protected access
-- 🎨 Modern Google Drive-like UI
-- 📁 Browse folders and files
-- 📥 Download files
-- 📤 Upload files
-- 🔍 Search functionality
-- 👁️ Grid and list view modes
-- 📱 Responsive design
-- 🌐 Network accessible
+---
 
-## Setup
+## 🎨 Features
 
-1. Install dependencies:
+- 🔐 **Password-Protected Access:** Secure login gateway using secure cryptographic hashes.
+- 🎨 **Modern Dark UI:** Premium Outfit typography, glassmorphic styles, and interactive micro-animations.
+- 📁 **File & Directory Management:** Create directories, rename items, and edit text documents directly in the browser.
+- 📥 **Batch & Folder Downloader:** Zip whole folders or selected items dynamically and stream downloads with temporary security tokens.
+- 🔍 **Recursive Search:** Search folders instantly with extension type categories (Images, Documents, Code, Video, Audio).
+- 👁️ **Grid & List Views:** Toggle dynamic layout grids with customized desktop-like right-click context menus.
+- 📤 **Drag-and-Drop Uploads:** Easily drag and drop folders/files into the browser view.
+- 📊 **Disk Storage Widget:** Displays real-time disk storage allocation metrics dynamically using host metrics.
+- 🐳 **Docker Containerization:** Seamless deployment via Docker Compose with CPU/memory limits, auto-start, and container healthchecks.
+
+---
+
+## ⚙️ Security Measures
+
+- **Traversal Hardening:** All pathways are sanitized against directory traversal attacks (`../` sequences).
+- **Hidden Resource Filtering:** Hidden files and folders (e.g. `.env`, `.git`, or custom database indexes) are automatically filtered out and blocked from API access.
+- **Dynamic Secret Keys:** Generates cryptographically secure session signatures dynamically on startup if no key is configured.
+- **Environment Isolation:** Credentials and sharing directories are entirely separated from the code, preventing accidental leaks.
+
+---
+
+## 🚀 Setup & Run
+
+### 📦 Option 1: Native Installation
+
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/rajjitlai/Quantum_Drive.git
+   cd Quantum_Drive
+   ```
+
+2. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Configure Environment:**
+   Copy the example environment file and configure your credentials:
+   ```bash
+   cp .env.example .env
+   # Edit .env and change the ACCESS_PASSWORD immediately!
+   ```
+
+4. **Start the Server:**
+   ```bash
+   python app.py
+   ```
+   Access at `http://localhost:8765` (or your local IP address).
+
+### 🐳 Option 2: Docker Compose (Recommended)
+
+Start the container instantly in background detached mode:
 ```bash
-pip install -r requirements.txt
+docker-compose up -d
 ```
+Docker Compose will automatically:
+- Bind to the unique port `8765`.
+- Mount `/mnt/HDD/` (or your configured `SHARED_FOLDER` from `.env`) as a volume.
+- Restart automatically if it crashes or the server boots up.
+- Enforce CPU and memory constraints.
 
-2. Configure the server (optional):
-   - Edit `app.py` to change:
-     - `SHARED_FOLDER`: The folder you want to share (default: `shared_files`)
-     - `PASSWORD_HASH`: Change the default password (default: `admin123`)
-     - `app.secret_key`: Change to a random secret key for production
+See [DOCKER_SETUP.md](DOCKER_SETUP.md) for more details.
 
-3. Create the shared folder:
-   - The folder `shared_files` will be created automatically
-   - Or set `SHARED_FOLDER` in `app.py` to an existing folder path
+---
 
-## Usage
+## 📁 Configuration File (`.env`)
 
-1. Start the server:
-```bash
-python app.py
-```
+You can customize server properties by editing the `.env` file:
 
-2. Access from any device on the same network:
-   - From the same computer: http://localhost:8000
-   - From other devices: http://YOUR_IP:8000 (e.g., http://192.168.1.100:8000)
+- `SHARED_FOLDER`: The directory path on the host machine to share (default: `/mnt/HDD/`).
+- `ACCESS_PASSWORD`: Plain text login password.
+- `SECRET_KEY`: Custom string used for session cookie encryption. If left blank, a random one is generated on launch.
 
-3. Login with password (default: `admin123`)
+---
 
-4. Browse, upload, and download files
+## 📜 License
 
-## Finding Your IP Address
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this project except in compliance with the License. You may obtain a copy of the License in the [LICENSE](LICENSE) file or at:
 
-### Windows (PowerShell):
-```bash
-ipconfig
-```
-Look for "IPv4 Address" under your active network adapter
-
-### Linux/Mac:
-```bash
-ip addr show
-# or
-ifconfig
-```
-
-## Security Notes
-
-- Change the default password in `app.py`
-- Change the `secret_key` in production
-- Only use on trusted networks (home/office)
-- For production use, consider adding HTTPS support
-
-## Customization
-
-### Change Password
-Edit `app.py`:
-```python
-PASSWORD_HASH = generate_password_hash('your-new-password')
-```
-
-### Change Shared Folder
-Edit `app.py`:
-```python
-SHARED_FOLDER = r"C:\path\to\your\folder"
-```
-
-### Change Port
-Edit `app.py` (bottom of file):
-```python
-app.run(host='0.0.0.0', port=8080)  # Change 8080 to your desired port
-```
-
-## File Structure
-
-```
-.
-├── app.py                 # Main Flask application
-├── requirements.txt       # Python dependencies
-├── README.md             # This file
-├── templates/
-│   ├── login.html        # Login page
-│   └── index.html        # Main file browser UI
-└── shared_files/         # Default shared folder (auto-created)
-```
-
-## Supported File Types
-
-All file types are supported for upload/download. The UI shows appropriate icons for:
-- Documents (PDF, DOC, DOCX, XLS, XLSX)
-- Images (JPG, PNG, GIF)
-- Videos (MP4)
-- Audio (MP3)
-- Archives (ZIP)
-- And more...
-
-## Browser Support
-
-- Chrome/Edge (recommended)
-- Firefox
-- Safari
-- Any modern browser
-
-## Troubleshooting
-
-### Can't access from other devices
-- Check your firewall settings
-- Ensure both devices are on the same network
-- Use your actual IP address, not localhost
-
-### Upload not working
-- Check folder permissions
-- Ensure `shared_files` folder exists and is writable
-
-### Port already in use
-- Change the port in `app.py` to a different number (e.g., 8080, 5000)
+[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)

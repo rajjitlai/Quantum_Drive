@@ -16,16 +16,49 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+def load_env():
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+    if os.path.exists(env_path):
+        with open(env_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                if '=' in line:
+                    key, val = line.split('=', 1)
+                    key = key.strip()
+                    val = val.strip()
+                    if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+                        val = val[1:-1]
+                    if key not in os.environ:
+                        os.environ[key] = val
+
+load_env()
+
 app = Flask(__name__)
-app.secret_key = (
-    "2.0lajjjdta657321bksxa123f45EWQoksbi"  # Change this to a random secret key
-)
+
+# Secret key configuration
+env_secret_key = os.environ.get("SECRET_KEY")
+if env_secret_key:
+    app.secret_key = env_secret_key
+else:
+    # Generate a random key on startup for security if none is specified
+    app.secret_key = os.urandom(24)
 
 # Configuration
-SHARED_FOLDER = "/mnt/HDD/"  # Folder to share
-PASSWORD_HASH = generate_password_hash(
-    "newhope4NewLife"
-)  # Default password: admin123 - change as needed
+SHARED_FOLDER = os.environ.get("SHARED_FOLDER") or "/mnt/HDD/"
+
+# Access password configuration
+env_access_password = os.environ.get("ACCESS_PASSWORD")
+env_password_hash = os.environ.get("PASSWORD_HASH")
+
+if env_access_password:
+    PASSWORD_HASH = generate_password_hash(env_access_password)
+elif env_password_hash:
+    PASSWORD_HASH = env_password_hash
+else:
+    PASSWORD_HASH = generate_password_hash("newhope4NewLife")
+
 ALLOWED_EXTENSIONS = set(
     [
         "txt",
@@ -51,6 +84,36 @@ os.makedirs(SHARED_FOLDER, exist_ok=True)
 TRASH_FOLDER = os.path.join(SHARED_FOLDER, ".trash")
 os.makedirs(TRASH_FOLDER, exist_ok=True)
 TRASH_METADATA_FILE = os.path.join(TRASH_FOLDER, ".metadata.json")
+
+def is_safe_path(path, allow_trash=False):
+    """
+    Validates that a path is safe from directory traversal and does not reference
+    hidden files or directories (starting with '.') unless explicitly allowed (e.g., .trash).
+    """
+    if path is None:
+        return False
+        
+    # Resolve absolute paths
+    full_path = os.path.abspath(os.path.join(SHARED_FOLDER, path))
+    shared_path = os.path.abspath(SHARED_FOLDER)
+    
+    # 1. Directory traversal check
+    if not full_path.startswith(shared_path):
+        return False
+        
+    # 2. Hidden files/folders check
+    rel_path = os.path.relpath(full_path, shared_path)
+    if rel_path == ".":
+        return True
+        
+    parts = Path(rel_path).parts
+    for part in parts:
+        if part.startswith('.'):
+            if allow_trash and part == '.trash':
+                continue
+            return False
+            
+    return True
 
 # Token-based active downloads storage
 active_downloads = {}
@@ -136,8 +199,8 @@ def list_files():
     path = request.args.get("path", "")
     full_path = os.path.join(SHARED_FOLDER, path)
 
-    # Security check: prevent directory traversal
-    if not os.path.abspath(full_path).startswith(os.path.abspath(SHARED_FOLDER)):
+    # Security check
+    if not is_safe_path(path):
         return jsonify({"error": "Invalid path"}), 403
 
     if not os.path.exists(full_path):
@@ -169,7 +232,7 @@ def download_file():
     full_path = os.path.join(SHARED_FOLDER, path)
 
     # Security check
-    if not os.path.abspath(full_path).startswith(os.path.abspath(SHARED_FOLDER)):
+    if not is_safe_path(path):
         return jsonify({"error": "Invalid path"}), 403
 
     if not os.path.isfile(full_path):
@@ -192,11 +255,10 @@ def upload_file():
         return jsonify({"error": "No file selected"}), 400
 
     filename = secure_filename(file.filename)
-    full_path = os.path.join(SHARED_FOLDER, path, filename)
-
-    # Security check
-    if not os.path.abspath(full_path).startswith(os.path.abspath(SHARED_FOLDER)):
+    if not is_safe_path(os.path.join(path, filename)):
         return jsonify({"error": "Invalid path"}), 403
+
+    full_path = os.path.join(SHARED_FOLDER, path, filename)
 
     file.save(full_path)
     return jsonify({"success": True, "filename": filename})
@@ -210,7 +272,7 @@ def preview_file():
     full_path = os.path.join(SHARED_FOLDER, path)
 
     # Security check
-    if not os.path.abspath(full_path).startswith(os.path.abspath(SHARED_FOLDER)):
+    if not is_safe_path(path):
         return jsonify({"error": "Invalid path"}), 403
 
     if not os.path.isfile(full_path):
@@ -230,11 +292,10 @@ def create_folder():
     if not folder_name:
         return jsonify({"error": "Invalid folder name"}), 400
         
-    full_path = os.path.join(SHARED_FOLDER, path, folder_name)
-    
-    # Security check
-    if not os.path.abspath(full_path).startswith(os.path.abspath(SHARED_FOLDER)):
+    if not is_safe_path(os.path.join(path, folder_name)):
         return jsonify({"error": "Invalid path"}), 403
+        
+    full_path = os.path.join(SHARED_FOLDER, path, folder_name)
         
     try:
         os.makedirs(full_path, exist_ok=False)
@@ -254,7 +315,7 @@ def delete_item():
     full_path = os.path.join(SHARED_FOLDER, path)
     
     # Security check
-    if not os.path.abspath(full_path).startswith(os.path.abspath(SHARED_FOLDER)):
+    if not is_safe_path(path, allow_trash=True):
         return jsonify({"error": "Invalid path"}), 403
         
     if not os.path.exists(full_path):
@@ -311,14 +372,17 @@ def rename_item():
     if not new_name:
         return jsonify({"error": "Invalid name"}), 400
         
-    full_path = os.path.join(SHARED_FOLDER, path)
-    parent_dir = os.path.dirname(full_path)
-    new_full_path = os.path.join(parent_dir, new_name)
-    
-    # Security check
-    if not os.path.abspath(full_path).startswith(os.path.abspath(SHARED_FOLDER)) or \
-       not os.path.abspath(new_full_path).startswith(os.path.abspath(SHARED_FOLDER)):
+    if not is_safe_path(path):
         return jsonify({"error": "Invalid path"}), 403
+        
+    parent_dir = os.path.dirname(path)
+    new_path = os.path.join(parent_dir, new_name)
+    if not is_safe_path(new_path):
+        return jsonify({"error": "Invalid path"}), 403
+        
+    full_path = os.path.join(SHARED_FOLDER, path)
+    parent_dir_full = os.path.dirname(full_path)
+    new_full_path = os.path.join(parent_dir_full, new_name)
         
     if not os.path.exists(full_path):
         return jsonify({"error": "Item not found"}), 404
@@ -390,6 +454,9 @@ def restore_trash_item():
         
     info = meta[trash_id]
     original_path = info["original_path"]
+    if not is_safe_path(original_path):
+        return jsonify({"error": "Invalid path"}), 403
+        
     trash_path = os.path.join(TRASH_FOLDER, trash_id)
     dest_path = os.path.join(SHARED_FOLDER, original_path)
     
@@ -448,10 +515,11 @@ def empty_trash():
 def download_folder():
     """Recursively zip a directory and stream it for download"""
     path = request.args.get("path", "")
-    full_path = os.path.join(SHARED_FOLDER, path)
     
-    if not os.path.abspath(full_path).startswith(os.path.abspath(SHARED_FOLDER)):
+    if not is_safe_path(path):
         return jsonify({"error": "Invalid path"}), 403
+        
+    full_path = os.path.join(SHARED_FOLDER, path)
         
     if not os.path.isdir(full_path):
         return jsonify({"error": "Folder not found"}), 404
@@ -497,10 +565,10 @@ def save_file():
     path = data.get("path", "")
     content = data.get("content", "")
     
-    full_path = os.path.join(SHARED_FOLDER, path)
-    
-    if not os.path.abspath(full_path).startswith(os.path.abspath(SHARED_FOLDER)):
+    if not is_safe_path(path):
         return jsonify({"error": "Invalid path"}), 403
+        
+    full_path = os.path.join(SHARED_FOLDER, path)
         
     if not os.path.isfile(full_path):
         return jsonify({"error": "File not found"}), 404
@@ -524,10 +592,10 @@ def create_file():
     if not filename:
         return jsonify({"error": "Invalid filename"}), 400
         
-    full_path = os.path.join(SHARED_FOLDER, path, filename)
-    
-    if not os.path.abspath(full_path).startswith(os.path.abspath(SHARED_FOLDER)):
+    if not is_safe_path(os.path.join(path, filename)):
         return jsonify({"error": "Invalid path"}), 403
+        
+    full_path = os.path.join(SHARED_FOLDER, path, filename)
         
     try:
         with open(full_path, "w", encoding="utf-8") as f:
@@ -555,6 +623,8 @@ def search_files():
     }
     
     for root, dirs, files in os.walk(SHARED_FOLDER):
+        # Prune hidden directories in-place so os.walk doesn't visit them
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
         if ".trash" in root.split(os.sep):
             continue
             
@@ -600,10 +670,10 @@ def batch_delete():
     errors = []
     
     for path in paths:
-        full_path = os.path.join(SHARED_FOLDER, path)
-        if not os.path.abspath(full_path).startswith(os.path.abspath(SHARED_FOLDER)):
+        if not is_safe_path(path):
             errors.append(f"Invalid path: {path}")
             continue
+        full_path = os.path.join(SHARED_FOLDER, path)
         if not os.path.exists(full_path):
             errors.append(f"Not found: {path}")
             continue
@@ -652,16 +722,18 @@ def batch_zip():
     try:
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for path in paths:
-                full_path = os.path.join(SHARED_FOLDER, path)
-                
-                if not os.path.abspath(full_path).startswith(os.path.abspath(SHARED_FOLDER)):
+                if not is_safe_path(path):
                     continue
+                full_path = os.path.join(SHARED_FOLDER, path)
                 if not os.path.exists(full_path):
                     continue
                     
                 if os.path.isdir(full_path):
                     for root, dirs, files in os.walk(full_path):
+                        dirs[:] = [d for d in dirs if not d.startswith('.')]
                         for file in files:
+                            if file.startswith('.'):
+                                continue
                             file_full_path = os.path.join(root, file)
                             arcname = os.path.relpath(file_full_path, os.path.dirname(full_path))
                             zipf.write(file_full_path, arcname)
@@ -721,6 +793,9 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8765))
     debug = os.getenv("FLASK_ENV", "production") == "development"
     print(f"Sharing folder: {SHARED_FOLDER}")
-    print(f"Default password: admin123")
+    if not env_access_password and not env_password_hash:
+        print("WARNING: Using default password 'newhope4NewLife'. Please change it by setting ACCESS_PASSWORD in your env/environment variables!")
+    else:
+        print("Access password configuration loaded.")
     print(f"Server starting on http://0.0.0.0:{port}")
     app.run(host="0.0.0.0", port=port, debug=debug)
