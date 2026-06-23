@@ -14,7 +14,7 @@ services:
     
     # Volume for persistent file storage
     volumes:
-      - /mnt/HDD:/mnt/HDD
+      - ./shared_files:/app/shared_files
       - .:/app
     
     # Environment variables
@@ -24,7 +24,7 @@ services:
       PYTHONUNBUFFERED: 1
       ACCESS_PASSWORD: ${ACCESS_PASSWORD:-newhope4NewLife}
       SECRET_KEY: ${SECRET_KEY}
-      SHARED_FOLDER: ${SHARED_FOLDER:-/mnt/HDD/}
+      SHARED_FOLDER: ${SHARED_FOLDER:-shared_files}
     
     # Resource limits (optional)
     deploy:

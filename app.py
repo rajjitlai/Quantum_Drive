@@ -46,7 +46,7 @@ else:
     app.secret_key = os.urandom(24)
 
 # Configuration
-SHARED_FOLDER = os.environ.get("SHARED_FOLDER") or "/mnt/HDD/"
+SHARED_FOLDER = os.environ.get("SHARED_FOLDER") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "shared_files")
 
 # Access password configuration
 env_access_password = os.environ.get("ACCESS_PASSWORD")
